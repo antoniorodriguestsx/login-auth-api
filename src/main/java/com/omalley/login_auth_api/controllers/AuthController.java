@@ -9,11 +9,10 @@ import com.omalley.login_auth_api.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -49,5 +48,31 @@ public class AuthController {
             return ResponseEntity.ok(new ResponseDTO(newUser.getName(), token));
         }
         return ResponseEntity.badRequest().build();
+    }
+
+
+
+    @GetMapping("/token/info")
+    public ResponseEntity<Map<String, Object>> getTokenInfo(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+
+            long remainingSeconds = tokenService.getRemainingTimeInSeconds(token);
+
+            if (remainingSeconds < 0) {
+                return ResponseEntity.status(401)
+                        .body(Map.of("error", "Invalid token"));
+            }
+
+            Map<String, Object> info = new HashMap<>();
+            info.put("remainingSeconds", remainingSeconds);
+            info.put("valid", true);
+
+            return ResponseEntity.ok(info);
+        } catch (Exception e) {
+            return ResponseEntity.status(401)
+                    .body(Map.of("error", "Invalid token"));
+        }
     }
 }
